@@ -1,0 +1,8 @@
+<ivy-module version="2.0">
+    <info organisation="pophealth" module="ccr-importer"/>
+    <dependencies>
+        <dependency org="org.codehaus.jackson" name="jackson-core-asl" rev="1.6.4"/>
+        <dependency org="org.codehaus.jackson" name="jackson-mapper-asl" rev="1.6.4"/>
+        <dependency org="joda-time" name="joda-time" rev="1.6.2"/>
+    </dependencies>
+</ivy-module>

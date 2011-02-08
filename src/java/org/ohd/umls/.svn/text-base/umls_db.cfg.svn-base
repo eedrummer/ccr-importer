@@ -1,0 +1,8 @@
+#-------------------
+DB_DRIVER=com.mysql.jdbc.Driver
+DB_HOST=localHost
+DB_NAME=UMLS
+DB_USERNAME=lvg
+DB_PASSWORD=lvg
+#-------------------
+# DIR =
