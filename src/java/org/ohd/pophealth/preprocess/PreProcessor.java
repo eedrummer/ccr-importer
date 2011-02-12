@@ -38,10 +38,16 @@ public class PreProcessor {
 
     public PreProcessor(InputStream config, String lvgConfLocation) {
         umls = new UMLSInterface(new UMLSConfiguration(config), lvgConfLocation);
+        setAvailableCS();
     }
 
     public PreProcessor(String fileName, String lvgConfLocation) {
         umls = new UMLSInterface(new UMLSConfiguration(fileName), lvgConfLocation);
+        setAvailableCS();
+    }
+
+    private void setAvailableCS(){
+        availableCS = umls.getCodingSystem();
     }
 
     public ContinuityOfCareRecord preProcess(ContinuityOfCareRecord ccr) {
@@ -92,6 +98,7 @@ public class PreProcessor {
             for (EncounterType et : ccr.getBody().getEncounters().getEncounter()) {
                 if (et.getDescription() == null) {
                     CodedDescriptionType cdt = new CodedDescriptionType();
+                    cdt.setText("Fixed Encounter");
                     et.setDescription(cdt);
                 }
                 for (CodeType ct : encounterCodes) {

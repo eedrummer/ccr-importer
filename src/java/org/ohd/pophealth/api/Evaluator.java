@@ -6,14 +6,10 @@
 package org.ohd.pophealth.api;
 
 import java.io.IOException;
-import java.io.StringReader;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 import org.astm.ccr.ContinuityOfCareRecord;
 import org.codehaus.jackson.JsonParseException;
 import org.codehaus.jackson.map.JsonMappingException;
@@ -43,6 +39,7 @@ public class Evaluator {
     boolean preProcess_inferCodes = false;
     boolean preProcess_fixTobacco = false;
     boolean preProcess_fixEncounters = false;
+    private CCRValidator validator;
 
     public Evaluator() {
         this(new Configuration());
@@ -81,8 +78,9 @@ public class Evaluator {
             Vocabulary v = Vocabulary.fromJson(this.getClass().getClassLoader().getResourceAsStream(config.getCcrVocabLocation()));
             rc = new RecordCreator(v);
             qMeasures = new ArrayList<QualityMeasure>();
-            URL conf = this.getClass().getClassLoader().getResource(config.getUmlsConfLocation());
-            pp = new PreProcessor(conf.getFile(), config.getLvgConfLocation());
+            URL umlsConf = this.getClass().getClassLoader().getResource(config.getUmlsConfLocation());
+            pp = new PreProcessor(umlsConf.getFile(), config.getLvgConfLocation());
+            validator = new CCRValidator(config);
         } catch (InCompleteVocabularyException ex) {
             Logger.getLogger(Evaluator.class.getName()).log(Level.SEVERE, null, ex);
         } catch (JsonMappingException ex) {
@@ -129,7 +127,7 @@ public class Evaluator {
     public String evaluate(String ccrXML){
         //Validate CCR File
         LOG.finest("Validating CCR");
-        ContinuityOfCareRecord ccr = validateCCR(ccrXML);
+        ContinuityOfCareRecord ccr = validator.validateCCR(ccrXML);
 
         // Check to make sure there a valid CCR was created
         // TODO fix when hooked up to real validator
@@ -179,23 +177,9 @@ public class Evaluator {
     }
 
     String lastErrors = "";  // Simple String to hold the errors for the JAXB validation
-    private ContinuityOfCareRecord validateCCR(String ccrXML) {
-        // TODO Connect true CCR Validator
-        try {
-            JAXBContext jc = JAXBContext.newInstance("org.astm.ccr");
-            Unmarshaller unmarshaller = jc.createUnmarshaller();
-            return (ContinuityOfCareRecord) unmarshaller.unmarshal(new StringReader(ccrXML));
-        } catch (JAXBException ex) {
-            Logger.getLogger(Evaluator.class.getName()).log(Level.SEVERE, null, ex);
-            // TODO Fix error messages to be conformant JSON
-            lastErrors = ex.getMessage();
-            return null;
-        }
-    }
 
     public ContinuityOfCareRecord preProcess(ContinuityOfCareRecord ccr){
         ccr = pp.preProcess(ccr);
         return ccr;
     }
-
 }
