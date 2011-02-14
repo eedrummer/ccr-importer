@@ -1,5 +1,5 @@
 <ivysettings>
-  <conf defaultResolver="chained"/>
+  <settings defaultResolver="chained"/>
   <resolvers>
     <chain name="chained">
       <ibiblio name="ibiblio" m2compatible="true"/>
