@@ -1,3 +1,9 @@
+# This script will take a directory of CCR's and run them through the preprocessor. It will output
+# them into a different directory. It uses the first argument to the script as the directory of CCR's.
+# It does not perform any checks to ensure that the document is a CCR, it will only look to make sure
+# that the file ends in .xml. It then preprocesses the file and outputs it into the clean directory.
+# The clean directory is specified by the second argument passed to the script.
+
 ccr_dir = nil
 clean_dir = nil
 
