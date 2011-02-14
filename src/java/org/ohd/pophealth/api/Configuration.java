@@ -13,6 +13,8 @@ public class Configuration {
     private String umlsConfLocation = "org/ohd/umls/umls_db.cfg";
     private String lvgConfLocation = "org/ohd/umls/lvg_db.cfg";
     private String ccrVocabLocation = "org/ohd/pophealth/ccr/importer/ccrvocabulary.json";
+    private String ccrXSDLocation = "org/ohd/CCRV1.xsd";
+
 
     public String getCcrVocabLocation() {
         return ccrVocabLocation;
@@ -20,6 +22,14 @@ public class Configuration {
 
     public void setCcrVocabLocation(String ccrVocabLocation) {
         this.ccrVocabLocation = ccrVocabLocation;
+    }
+
+    public String getCcrXSDLocation() {
+        return ccrXSDLocation;
+    }
+
+    public void setCcrXSDLocation(String ccrXSDLocation) {
+        this.ccrXSDLocation = ccrXSDLocation;
     }
 
     public String getLvgConfLocation() {
