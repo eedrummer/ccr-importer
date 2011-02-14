@@ -43,7 +43,7 @@
 
     <target name="compile" depends="init-ivy,get-deps">
         <mkdir dir="classes"/>
-        <javac srcdir="src/java" destdir="classes">
+        <javac srcdir="src/java" destdir="classes" debug="true">
             <classpath>
                 <fileset dir="lib">
                     <include name="**/*.jar"/>
