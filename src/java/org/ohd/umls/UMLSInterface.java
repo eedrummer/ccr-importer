@@ -69,9 +69,9 @@ public class UMLSInterface  implements Closeable{
 //        InputStream is = this.getClass().getClassLoader().getResourceAsStream(lvg_conf);
 //        Hashtable<String, String> conf = UMLSConfiguration.makeLuiProperties(is);
 //        myLui = new LuiNormApi(conf);
-        URL conf = this.getClass().getClassLoader().getResource("org/ohd/umls/lvg_db.cfg");
-        System.out.println(conf.getFile());
-        myLui = new LuiNormApi(conf.getFile());
+        //URL conf = this.getClass().getClassLoader().getResource("org/ohd/umls/lvg_db.cfg");
+        //System.out.println(conf.getFile());
+        myLui = new LuiNormApi(lvg_conf);
     }
 
 
