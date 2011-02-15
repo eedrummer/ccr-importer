@@ -22,12 +22,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.LinkedList;
 import java.util.List;
+
 import gov.nih.nlm.nls.lvg.Api.LuiNormApi;
+
 import java.io.Closeable;
-import java.io.InputStream;
-import java.net.URL;
 import java.util.ArrayList;
-import java.util.Hashtable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -184,7 +183,7 @@ public class UMLSInterface  implements Closeable{
         return l;
     }
     public List<CodingSystem> getCodingSystem(){
-        String sql = "SELECT DISTINCT rsab, son, sver FROM umls.mrsab m ORDER BY son";
+        String sql = "SELECT DISTINCT rsab, son, sver FROM umls.MRSAB m ORDER BY son";
         
         try {
             ResultSet rs = this.ExecuteSql(sql);
@@ -205,7 +204,7 @@ public class UMLSInterface  implements Closeable{
     
     public Code getCode(String cui, CodingSystem cs){
         // String sql = "SELECT code, str FROM mrconso WHERE cui = '"+cui+"' AND sab = '"+cs.getId()+"' AND ispref = 'Y' AND mrconso.ts = 'P'";
-        String sql = "SELECT code, str FROM mrconso WHERE cui = '"+cui+"' AND sab = '"+cs.getId()+"'"; // Widen the apeture RXNorm missing with ispref
+        String sql = "SELECT code, str FROM MRCONSO WHERE cui = '"+cui+"' AND sab = '"+cs.getId()+"'"; // Widen the apeture RXNorm missing with ispref
         try{
             ResultSet rs = this.ExecuteSql(sql);
             if (rs.next()){
