@@ -2,9 +2,9 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-
 package org.ohd.pophealth.api;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -28,9 +28,9 @@ import org.ohd.pophealth.preprocess.PreProcessor;
  *
  * @author ohdohd
  */
-public class Evaluator {
-    private final static Logger LOG = Logger.getLogger(Evaluator.class.getName());
+public class Evaluator implements Closeable{
 
+    private final static Logger LOG = Logger.getLogger(Evaluator.class.getName());
     private QualityMeasureEvaluator qme;
     private RecordCreator rc;
     private ArrayList<QualityMeasure> qMeasures;
@@ -40,11 +40,11 @@ public class Evaluator {
     boolean preProcess_fixTobacco = false;
     boolean preProcess_fixEncounters = false;
     private CCRValidator validator;
+    private boolean strictValidation = true;
 
     public Evaluator() {
         this(new Configuration());
     }
-
 
     /**
      * Creates a new Evaluator with a set of Quality Measures to use in the
@@ -52,7 +52,7 @@ public class Evaluator {
      *
      * @param qMeasures  The list of Quality Measures
      */
-    public Evaluator(ArrayList<QualityMeasure> qMeasures){
+    public Evaluator(ArrayList<QualityMeasure> qMeasures) {
         this();
         this.qMeasures = qMeasures;
     }
@@ -63,7 +63,7 @@ public class Evaluator {
      *
      * @param qMeasures  The list of Quality Measures
      */
-    public Evaluator(Configuration config, ArrayList<QualityMeasure> qMeasures){
+    public Evaluator(Configuration config, ArrayList<QualityMeasure> qMeasures) {
         this(config);
         this.qMeasures = qMeasures;
     }
@@ -72,7 +72,7 @@ public class Evaluator {
      * Generic constructor.  Must call at least one of the <code>addMeasure</code>
      * methods to add quality measures to be evaluated.
      */
-    public Evaluator(Configuration config){
+    public Evaluator(Configuration config) {
         try {
             qme = new QualityMeasureEvaluator();
             Vocabulary v = Vocabulary.fromJson(this.getClass().getClassLoader().getResourceAsStream(config.getCcrVocabLocation()));
@@ -116,6 +116,13 @@ public class Evaluator {
         this.preProcess_inferCodes = preProcess_inferCodes;
     }
 
+    public boolean isStrictValidation() {
+        return strictValidation;
+    }
+
+    public void setStrictValidation(boolean strictValidation) {
+        this.strictValidation = strictValidation;
+    }
 
 
     /**
@@ -125,21 +132,25 @@ public class Evaluator {
      * @return JSON representation of popHealth result
      */
     public String evaluate(String ccrXML){
+        return evaluate(ccrXML, isStrictValidation());
+    }
+    
+    public String evaluate(String ccrXML, boolean strictValidation) {
         //Validate CCR File
         LOG.finest("Validating CCR");
-        ContinuityOfCareRecord ccr = validator.validateCCR(ccrXML);
+        ContinuityOfCareRecord ccr = validator.validateCCR(ccrXML, strictValidation);
 
         // Check to make sure there a valid CCR was created
         // TODO fix when hooked up to real validator
-        if (ccr != null){
+        if (ccr != null) {
             LOG.finest("Found a Valid CCR");
-            if (preProcess_fixEncounters){
+            if (preProcess_fixEncounters) {
                 ccr = pp.fixEncounters(ccr);
             }
-            if (preProcess_fixTobacco){
+            if (preProcess_fixTobacco) {
                 ccr = pp.fixTobaccoHx(ccr);
             }
-            if (preProcess_inferCodes){
+            if (preProcess_inferCodes) {
                 ccr = pp.inferCodes(ccr);
             }
             // Import the CCR into standard json record
@@ -148,9 +159,9 @@ public class Evaluator {
             String result = qme.evaluate(r, qMeasures);
             LOG.log(Level.FINEST, "EVALUATION RESULT\n{0}", result);
             return result;
-        }else {
+        } else {
             LOG.info("INVALID CCR returning last errors");
-            return lastErrors;
+            return validator.getLastErrors(true);
         }
     }
 
@@ -160,26 +171,33 @@ public class Evaluator {
      *
      * @param qMeasure  The quality measure to add
      */
-    public void addMeasure(QualityMeasure qMeasure){
+    public void addMeasure(QualityMeasure qMeasure) {
         this.qMeasures.add(qMeasure);
         LOG.log(Level.FINEST, "Quality Measure {0} added", qMeasure.getId());
     }
 
     /**
-     * Adda a quality measure in JSON format to the list of quality measures to
+     * Add a quality measure in JSON format to the list of quality measures to
      * use in the evaluations.
      *
-     * @param qMeasureJSON  JSON String representing the qualiy measures
+     * @param qMeasureJSON  JSON String representing the quality measures
      * @throws Exception  Exception thrown if problem parsing JSON string
      */
-    public void addMeasure(String qMeasureJSON) throws Exception{
+    public void addMeasure(String qMeasureJSON) throws Exception {
         addMeasure(MeasureReader.extractQualityMeasure(qMeasureJSON));
     }
-
     String lastErrors = "";  // Simple String to hold the errors for the JAXB validation
 
-    public ContinuityOfCareRecord preProcess(ContinuityOfCareRecord ccr){
+
+
+    public ContinuityOfCareRecord preProcess(ContinuityOfCareRecord ccr) {
         ccr = pp.preProcess(ccr);
         return ccr;
+    }
+
+    public void close() throws IOException {
+        if (pp != null){
+            pp.close();
+        }
     }
 }

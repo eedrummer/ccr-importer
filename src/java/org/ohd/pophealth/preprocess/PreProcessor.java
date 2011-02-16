@@ -4,6 +4,8 @@
  */
 package org.ohd.pophealth.preprocess;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +33,7 @@ import org.ohd.umls.UMLSInterface;
  *
  * @author ohdohd
  */
-public class PreProcessor {
+public class PreProcessor implements Closeable {
 
     private static UMLSInterface umls;
     private static List<CodingSystem> availableCS;
@@ -46,8 +48,9 @@ public class PreProcessor {
         setAvailableCS();
     }
 
-    private void setAvailableCS(){
+    private void setAvailableCS() {
         availableCS = umls.getCodingSystem();
+        Logger.getLogger(PreProcessor.class.getName()).log(Level.FINEST, "Size of available Coding Systems: " + availableCS.size());
     }
 
     public ContinuityOfCareRecord preProcess(ContinuityOfCareRecord ccr) {
@@ -61,6 +64,11 @@ public class PreProcessor {
         if (ccr.getBody().getSocialHistory() != null) {
             ProblemType p = fixTobaccoHx(ccr.getBody().getSocialHistory().getSocialHistoryElement());
             if (p != null) {
+                // fix the date and set to CCR creation date
+                if (p.getDateTime().isEmpty()) {
+                    p.getDateTime().add(ccr.getDateTime());
+                }
+                //Add to existing list of problems or create a new list of needed
                 if (ccr.getBody().getProblems() != null) {
                     ccr.getBody().getProblems().getProblem().add(p);
                 } else {
@@ -134,7 +142,7 @@ public class PreProcessor {
     private void codeMeds(List<StructuredProductType> medications) {
         for (StructuredProductType spt : medications) {
             for (Product p : spt.getProduct()) {
-                Logger.getLogger(PreProcessor.class.getName()).log(Level.INFO, "Looking up code for {0}", p.getProductName().getText());
+                Logger.getLogger(PreProcessor.class.getName()).log(Level.FINE, "Looking up code for {0}", p.getProductName().getText());
                 addCode(p.getProductName(), "rxnorm");
                 if (p.getBrandName() != null) {
                     addCode(p.getBrandName(), "rxnorm");
@@ -179,6 +187,24 @@ public class PreProcessor {
             }
             for (TestType tt : rt.getTest()) {
                 if (tt.getDescription() != null) {
+                    // TODO Hack to fix systolic/diastolic
+                    if (tt.getDescription().getText() != null) {
+                        if ("systolic".equalsIgnoreCase(tt.getDescription().getText())) {
+                            // Setting the text to include "blood pressure" will allow for the correct infered code
+                            tt.getDescription().setText("Systolic Blood Pressure");
+                        } else if ("diastolic".equalsIgnoreCase(tt.getDescription().getText())) {
+                            // Setting the text to include "blood pressure" does not work with diastolic, need to force it
+                            tt.getDescription().setText("Diastolic Blood Pressure");
+                            // Force the add a SNOMEDCT Code
+                            CodeType dbp = new CodeType();
+                            dbp.setCodingSystem("SNOMEDCT");
+                            dbp.setVersion("07/2009");
+                            dbp.setValue("163031004");
+                            tt.getDescription().getCode().add(dbp);
+
+                        }
+                    }
+                    // End Hack
                     addCode(tt.getDescription(), "lnc");
                     addCode(tt.getDescription(), "snomedct");
                 }
@@ -201,7 +227,7 @@ public class PreProcessor {
                         smoker.setVersion("2009");
                         desc.getCode().add(smoker);
                         tobacAddic.setDescription(desc);
-                        Logger.getLogger(PreProcessor.class.getName()).log(Level.INFO, "Found Current Smoker");
+                        Logger.getLogger(PreProcessor.class.getName()).log(Level.FINE, "Found Current Smoker");
                         return tobacAddic;
                     } else {
                         ProblemType tobacAddic = new ProblemType();
@@ -214,7 +240,7 @@ public class PreProcessor {
                         smoker.setVersion("2009");
                         desc.getCode().add(smoker);
                         tobacAddic.setDescription(desc);
-                        Logger.getLogger(PreProcessor.class.getName()).log(Level.INFO, "Found Non Smoker");
+                        Logger.getLogger(PreProcessor.class.getName()).log(Level.FINE, "Found Non Smoker");
                         return tobacAddic;
                     }
                 }
@@ -235,18 +261,20 @@ public class PreProcessor {
             }
 
             String norm = umls.normalize(cdt.getText());
+            Logger.getLogger(PreProcessor.class.getName()).log(Level.FINEST, "Normalized to: " + norm);
             List<String> cuis = umls.getCUIs(norm);
+            Logger.getLogger(PreProcessor.class.getName()).log(Level.FINEST, "Found [{0}] CUI matches", cuis.size());
             for (String cui : cuis) {
                 Code code = umls.getCode(cui, cs);
                 if (code != null) {
-                    Logger.getLogger(PreProcessor.class.getName()).log(Level.INFO, "Adding Code: {0} [{1}] for [{2}]", new Object[]{code.getTerm(), code.getValue(), cdt.getText()});
+                    Logger.getLogger(PreProcessor.class.getName()).log(Level.FINEST, "Adding Code: {0} [{1}] for [{2}]", new Object[]{code.getTerm(), code.getValue(), cdt.getText()});
                     CodeType ct = new CodeType();
                     ct.setCodingSystem(cs.getId());
                     ct.setVersion(cs.getVersion());
                     ct.setValue(code.getValue());
                     cdt.getCode().add(ct);
                 } else {
-                    Logger.getLogger(PreProcessor.class.getName()).log(Level.INFO, "No Code Found for: {0}", norm);
+                    Logger.getLogger(PreProcessor.class.getName()).log(Level.FINEST, "No Code Found for: {0}", norm);
                 }
             }
 
@@ -260,5 +288,9 @@ public class PreProcessor {
             }
         }
         return null;
+    }
+
+    public void close() throws IOException {
+        this.umls.close();
     }
 }

@@ -58,6 +58,21 @@ public class CCRValidator {
         return "";
     }
 
+    public ContinuityOfCareRecord validateCCR(String ccrXML, boolean strict){
+         ContinuityOfCareRecord ccr = validateCCR(ccrXML);
+         if (!strict && ccr == null){
+             try {
+                JAXBContext jc = JAXBContext.newInstance("org.astm.ccr");
+                Unmarshaller unmarshaller = jc.createUnmarshaller();
+                ccr = (ContinuityOfCareRecord) unmarshaller.unmarshal(new StringReader(ccrXML));
+            } catch (JAXBException ex) {
+                Logger.getLogger(Evaluator.class.getName()).log(Level.WARNING, ex.getLocalizedMessage());
+                return null;
+            }
+         }
+         return ccr;
+    }
+
     public ContinuityOfCareRecord validateCCR(String ccrXML) {
         try {
             // TODO Connect true CCR Validator

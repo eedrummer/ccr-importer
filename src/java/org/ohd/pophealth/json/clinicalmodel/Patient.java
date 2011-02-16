@@ -16,6 +16,8 @@ public class Patient {
 
     private long birthdate;  // milliseconds from epoch
     private String gender;
+    private String first; // First Name
+    private String last;  // Last Name
     private ArrayList<CodedValue> race;
     private ArrayList<CodedValue> ethnicity;
 
@@ -37,6 +39,22 @@ public class Patient {
 
     public void setBirthdate(long birthdate) {
         this.birthdate = birthdate;
+    }
+
+    public String getFirst() {
+        return first;
+    }
+
+    public void setFirst(String first) {
+        this.first = first;
+    }
+
+    public String getLast() {
+        return last;
+    }
+
+    public void setLast(String last) {
+        this.last = last;
     }
 
     public ArrayList<CodedValue> getEthnicity() {
