@@ -60,7 +60,7 @@ public class QualityMeasureEvaluator {
         // Create a new result object which represent the JSON result
         pop = new PopHealthPatientRecord();
         // Set the information about the patient
-        pop.setBirthdate(r.getPatient().getBirthdate());
+        pop.setPatient(r.getPatient());
         // Iterate through each quality measure and evaluate against it
         for (QualityMeasure q : qList) {
             evaluate(pop, q);

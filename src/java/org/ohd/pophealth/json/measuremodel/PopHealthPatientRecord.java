@@ -13,6 +13,7 @@ import org.codehaus.jackson.JsonGenerationException;
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.JsonMappingException;
 import org.ohd.pophealth.json.JsonMapper;
+import org.ohd.pophealth.json.clinicalmodel.Patient;
 
 /**
  *
@@ -20,11 +21,11 @@ import org.ohd.pophealth.json.JsonMapper;
  */
 public class PopHealthPatientRecord {
 
-    private long birthdate;
+    private Patient patient;
     private ArrayList<MeasureResult> measures;
 
-    public PopHealthPatientRecord(long birthdate) {
-        this.birthdate = birthdate;
+    public PopHealthPatientRecord(Patient patient) {
+        this.patient = patient;
         measures = new ArrayList<MeasureResult>();
     }
 
@@ -36,12 +37,12 @@ public class PopHealthPatientRecord {
         measures.add(new MeasureResult(id, map));
     }
 
-    public long getBirthdate() {
-        return birthdate;
+    public Patient getPatient() {
+        return patient;
     }
 
-    public void setBirthdate(long birthdate) {
-        this.birthdate = birthdate;
+    public void setPatient(Patient patient) {
+        this.patient = patient;
     }
 
     public ArrayList<MeasureResult> getMeasures() {
@@ -71,7 +72,10 @@ public class PopHealthPatientRecord {
             jg.useDefaultPrettyPrinter();
         }
         jg.writeStartObject();
-            jg.writeNumberField("birthdate", birthdate);
+            jg.writeStringField("first", patient.getFirst());
+            jg.writeStringField("last", patient.getLast());
+            jg.writeStringField("gender", patient.getGender());
+            jg.writeNumberField("birthdate", patient.getBirthdate());
             jg.writeObjectFieldStart("measures");
                 for (MeasureResult mr : this.measures){
                     jg.writeObjectFieldStart(mr.id);

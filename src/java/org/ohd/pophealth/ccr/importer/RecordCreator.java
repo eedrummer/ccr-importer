@@ -12,6 +12,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.astm.ccr.ActorReferenceType;
 import org.astm.ccr.ActorType;
+import org.astm.ccr.ActorType.Person.Name;
 import org.astm.ccr.Agent;
 import org.astm.ccr.AlertType;
 import org.astm.ccr.CCRCodedDataObjectType;
@@ -37,6 +38,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.ISODateTimeFormat;
 import org.ohd.pophealth.json.clinicalmodel.Actor;
 import org.ohd.pophealth.json.clinicalmodel.Allergy;
+import org.ohd.pophealth.json.clinicalmodel.BaseObject;
 import org.ohd.pophealth.json.clinicalmodel.Medication;
 import org.ohd.pophealth.json.clinicalmodel.Test;
 import org.ohd.pophealth.json.measuremodel.CodedValue;
@@ -150,12 +152,43 @@ public class RecordCreator {
         Patient p = new Patient();
 
         // Set Date Of Birth - Assumes DOB required by CCR Validation
-        DateTimeType dt = pt.getPerson().getDateOfBirth();
+        if (pt.getPerson() != null && pt.getPerson().getDateOfBirth() != null){
+            DateTimeType dt = pt.getPerson().getDateOfBirth();
         String dob = dt.getExactDateTime();
         p.setBirthdate(convertISO8601toSecfromEpoch(dob));
+        }else{
+            p.setBirthdate(BaseObject.minDate);
+        }
+
+        // Set Name
+        if (pt.getPerson() != null && pt.getPerson().getName() != null){
+            Name n = pt.getPerson().getName();
+            // Try Current Name first
+            if (n.getCurrentName() != null){
+                if (!n.getCurrentName().getFamily().isEmpty()){
+                    // Just grab the first family name
+                    // TODO handle multiple last names
+                    p.setLast(n.getCurrentName().getFamily().get(0));
+                }
+                if (!n.getCurrentName().getGiven().isEmpty()){
+                    p.setFirst(n.getCurrentName().getGiven().get(0));
+                }
+            // Second try birth name
+            }else if (n.getBirthName() != null){
+                if (!n.getBirthName().getFamily().isEmpty()){
+                    // Just grab the first family name
+                    // TODO handle multiple last names
+                    p.setLast(n.getBirthName().getFamily().get(0));
+                }
+                if (!n.getBirthName().getGiven().isEmpty()){
+                    p.setFirst(n.getBirthName().getGiven().get(0));
+                }
+            }
+            // TODO Add code to finally check for Additional Names
+        }
 
         // Set Gender
-        if (pt.getPerson().getGender() != null) {
+        if (pt.getPerson() != null  && pt.getPerson().getGender() != null) {
             if (isConceptMatch(v.getTermSet("gender_male"), pt.getPerson().getGender())) {
                 p.setGender("M");
             } else if (isConceptMatch(v.getTermSet("gender_female"), pt.getPerson().getGender())) {
@@ -267,7 +300,7 @@ public class RecordCreator {
                 try {
                     dateOnset = findDate(v.getTermSet("onset"), sht.getDateTime());
                 } catch (NoValidDateFound ex) {
-                    Logger.getLogger(RecordCreator.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(RecordCreator.class.getName()).log(Level.WARNING, ex.getLocalizedMessage());
                 }
                 if (dateOnset != null) {
                     c.setOnset(convertISO8601toSecfromEpoch(dateOnset));
@@ -277,7 +310,7 @@ public class RecordCreator {
                 try {
                     dateResolve = findDate(v.getTermSet("resolved"), sht.getDateTime());
                 } catch (NoValidDateFound ex) {
-                    Logger.getLogger(RecordCreator.class.getName()).log(Level.SEVERE, null, ex);
+                    Logger.getLogger(RecordCreator.class.getName()).log(Level.WARNING, ex.getLocalizedMessage());
                 }
                 if (dateResolve != null) {
                     c.setResolution(convertISO8601toSecfromEpoch(dateResolve));
